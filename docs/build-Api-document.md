@@ -1,3 +1,3 @@
 # build-Api-document
 
-npx redoc-cli bundle -o D:\workspace\MTI\Text-detection.yaml.html Text-detection.yaml
+npx redoc-cli bundle -o .\MTI-AI-Service.yaml.html .\MTI-AI-Service.yaml
