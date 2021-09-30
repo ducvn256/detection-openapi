@@ -3,7 +3,23 @@ info:
   title: Text-detection
   version: '1.0'
   summary: MTI AI-lab service
-  description: Whiteboarding exercise for AI Engineer
+  description: |-
+    <b>Whiteboarding exercise for AI Engineer</b>
+
+    Background:
+    - A client requires a system that receives pictures as input and outputs a text that is found within the picture. 
+    - The system must be on deployed on the cloud and the text being read may contain person identifying information (PII). 
+    - The average load system is expected to be 10 requests a minute, with a burst rate of 2 requests a second. The average processing time is 20 seconds, but the core component does not guarantee to return correct results. The user expects the system to return result in 30 seconds. 
+    - The user can also check the results generated in the last 7 days, but images processed beyond 7 days ago are purged from the system.
+
+    Design an architecture for such a system on a cloud that would support the requirements.
+
+    Consider the following:
+    - API(REST API) - Discuss how client will follow an approach to communicate with the service along with load balancer which is the front end of the service.
+    - Application Layer – Discuss how the worker thread or hosts that will take the input, send it to the core component, obtain the result and store result in the database .
+    - Persistence Layer – Database
+
+    Final part: explain the architectural choices to non-technical audience
   contact:
     url: 'https://ailab.mti-vietnam.vn/'
     name: MTI Vietnam
@@ -33,9 +49,17 @@ paths:
               schema:
                 description: ''
                 type: object
+                x-examples:
+                  example-1:
+                    Success:
+                      code: successCode
+                      message: Message
                 properties:
                   Success:
                     type: object
+                    required:
+                      - code
+                      - message
                     properties:
                       code:
                         type: string
@@ -43,23 +67,15 @@ paths:
                       message:
                         type: string
                         minLength: 1
-                    required:
-                      - code
-                      - message
                 required:
                   - Success
-                x-examples:
-                  example-1:
-                    Success:
-                      code: successCode
-                      message: Message
               examples:
                 example-1:
                   Success:
                     code: Ok
                     message: Detection request has accepted! client should keep retrying fetch the async-get-result every 10-seconds with X-Request-Id
         '400':
-          description: Invalid image binary
+          description: All kind of invalid from Image-Binary
           headers:
             X-detection-Id:
               schema:
@@ -93,8 +109,16 @@ paths:
               examples:
                 example-1:
                   error:
-                    code: string
-                    message: string
+                    code: Unsupported-File
+                    message: The file extension is invalid
+                example-2:
+                  error:
+                    code: FileSize-TooLarge
+                    message: Service only accept file less then N-MB
+                example-3:
+                  error:
+                    code: FileSchema-Invalid
+                    message: The file binary is invalid
         '500':
           description: Internal Server Error
           content:
@@ -172,31 +196,61 @@ paths:
         - You can call this operation to submit text-detection asynchronously
         - This operation quickly respond http-202 and including a unique <b>X-detection-Id</b> from Header for further fetch detection result
       parameters: []
+      security:
+        - bearerAuth: []
       requestBody:
         content:
+          application/octet-stream:
+            schema:
+              type: 'null'
+            examples: {}
           application/json:
             schema:
               type: object
-              properties: {}
-          application/octet-stream:
-            schema:
-              type: string
-            examples:
-              example-1: {}
-        description: '[Image binary stream]'
+              properties:
+                imageUrl:
+                  type: string
+              required:
+                - imageUrl
+        description: '[image binary]'
   '/image/result-fetch/{X-detection-Id}':
     get:
-      summary: Your GET endpoint
+      summary: Fetch text detection result operation
       tags: []
-      responses: {}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+        '500':
+          description: Internal Server Error
+        '503':
+          description: Service Unavailable
       operationId: get-image-result-fetch
       parameters: []
+      description: |
+        - You can call this operation to fetch a result for a specific async-detection
+        - Given <b>X-detection-Id</b> from previous async-detection response
+      security:
+        - bearerAuth: []
     parameters:
       - schema:
           type: string
+          example: 401ddbba-21e8-11ec-9621-0242ac130002
         name: X-detection-Id
         in: path
         required: true
+        description: Given <b>X-detection-Id</b> from previous async-detection response
+  /image/sync-detection:
+    post:
+      summary: ''
+      operationId: post-image-sync-detection
+      responses:
+        '200':
+          description: OK
 components:
   schemas:
     User:
